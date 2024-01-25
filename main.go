@@ -10,7 +10,7 @@ import (
 func main() {
 	// Connect to the Cassandra cluster
 	cluster := gocql.NewCluster("127.0.0.1")
-	cluster.Keyspace = "system"
+	cluster.Keyspace = "System"
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatal(err)
@@ -25,7 +25,7 @@ func main() {
 
 	// Switch to the new keyspace
 	session.Close()
-	cluster.Keyspace = "mykeyspace"
+	cluster.Keyspace = "subKeySpace"
 	session, err = cluster.CreateSession()
 	if err != nil {
 		log.Fatal(err)
