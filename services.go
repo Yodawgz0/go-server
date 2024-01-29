@@ -30,6 +30,7 @@ func handlePostRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Data received: Username - %s, Age - %d", userData.Username, userData.Age)
 
 	// Send a response to the client
-	responseMessage := fmt.Sprintf("Data received is Username: %s and Age: %d", userData.Username, userData.Age)
+	responseMessage := fmt.Sprintf("Data received is Username: %s and Age: %d",
+		userData.Username, userData.Age)
 	fmt.Fprintf(w, responseMessage)
 }

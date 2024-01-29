@@ -15,8 +15,6 @@ func main() {
 
 func startServer() {
 	fmt.Println("Starting the server...")
-
-	// Example: Run the main.go file
 	cmd := exec.Command("go", "run", "main.go", "services.go")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
