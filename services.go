@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -233,7 +235,7 @@ func handleReadGetRequest(w http.ResponseWriter, r *http.Request) {
 	defer session.Close()
 
 	// Query the system_schema.tables table to list the tables in the keyspace
-	iter := session.Query("SELECT vehicle_census WHERE keyspace_name = ?", "vehicle_census").Iter()
+	iter := session.Query("SELECT * FROM vehicle_census").Iter()
 	var tableName string
 	for iter.Scan(&tableName) {
 		// Print the table name to the console
@@ -244,6 +246,51 @@ func handleReadGetRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseMessage := fmt.Sprintf("Reading of the table name is done!")
+	file, err := os.Open("data.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	records, err := csv.NewReader(file).ReadAll()
+	if err != nil {
+		panic(err)
+	}
+	for _, record := range records {
+		// query := session.Query(`INSERT INTO vehicle_census (
+		// 	ID, TABWEIGHT, REGSTATE, ACQUIREYEAR, ACQUISITION, AVGWEIGHT, BRAKES, BTYPE, BUSRELATED, CAB, CABDAY, CABHEIGHT,
+		// 	CI_AUTOEBRAKE, CI_AUTOESTEER, CI_RAUTOEBRAKE, CUBICINCHDISP, CW_BLINDSPOT, CW_FWDCOLL, CW_LANEDEPART, CW_PARKOBST,
+		// 	CW_RCROSSTRAF, CYLINDERS, DC_ACTDRIVASST, DC_ADAPCRUISE, DC_LANEASST, DC_PLATOON, DC_VTVCOMM, DEADHEADPCT, DRIVEAXLES,
+		// 	ENGREBUILD, ER_COMPOWN, ER_COST, ER_DEALER, ER_GENERAL, ER_LEASING, ER_OTHER, ER_SELF, ER_UNKLOC, FE_AEROBUMP,
+		// 	FE_AEROHOOD, FE_AEROMIRROR, FE_AUTOENGOFF, FE_AUTOTIREINF, FE_FAIRINGS, FE_FTCOVER, FE_GAPREDUCER, FE_HYBDRIVENP,
+		// 	FE_HYBDRIVEPL, FE_IDLEREDUCE, FE_LRRTIRES, FE_NOSECONE, FE_SIDESKIRT, FTYPE, FUELTYPE, FUELWHERE, GM_COMPOWN,
+		// 	GM_COST, GM_DEALER, GM_GENERAL, GM_LEASING, GM_OTHER, GM_SELF, GVWR_CLASS, HAZCARRY, HAZPCT, HBSTATE, HBTYPE, JU_CANADA,
+		// 	JU_HOMEBASE, JU_MEXICO, JU_OTHERST, KINDOFBUS, LE_HEIGHT, LE_WEIGHTBR, LE_WEIGHTHI, LEASECHAR, LEASELENGTH, LEASESTAT,
+		// 	LF_BELOW, LF_BEYOND, LF_FORWARD, LOADEDPCT, LP_FINANCEONLY, LP_FUELCONT, LP_FULLMAINT, LP_LICENSEPERM, LP_PAYTAX,
+		// 	LP_RECORDKEEP, LTRUCKLOADPCT, MILESANNL, MILESLIFE, MODELYEAR, MONTHOPERATE, MPG, NUMBRAKING, NUMGEARS, NUMLIFTABLE,
+		// 	OD_AHIGHBEAM, OD_BACKUPCAM, OD_DRIVERMON, OD_HUD, OD_NIGHTVIS, OD_SVCAM, OF_AERIAL, OF_AIRCOMPRESS, OF_AIRSPRING,
+		// 	OF_AUXGEN, OF_CRANE, OF_DIGGERDER, OF_EMERLIGHT, OF_ENGINERET, OF_HITCH, OF_HOIST, OF_INVERTER, OF_LADDERRACK,
+		// 	OF_LIFTGATE, OF_MOUNTBAR, OF_PARTITION, OF_POWTAKEOFF, OF_RAILWAYAXLE, OF_REFRIGERATOR, OF_SPREADER, OF_TELEMATICS,
+		// 	OF_TOOLBOX, OF_WELDER, OF_WINCH, OF_WSBYPASS, OWGTPMTANN, OWGTPMTSNG, PA_APARKASST, PA_REMOTEPARK, PAXLECONFIG,
+		// 	PRIMCOMMACT, PRIMPROD, REARAXLETIRES, REPLACE, REPOSITIONPCT, RGROUP, RO_0_50, RO_101_200, RO_201_500, RO_51_100,
+		// 	RO_GT500, ST_ABS, ST_AIRBAG, ST_CRUISE, ST_DRIVERCAM, ST_GPS, ST_GPSNAV, ST_INTERNET, ST_ROLLOVER, TCONFIG, TE_AEROREF,
+		// 	TE_ALUMWHEEL, TE_FRONTFAIRING, TE_LWLANDGEAR, TE_OTHER, TE_REARFAIRING, TE_SIDESKIRTS, TE_UCAERODEV, TOTLENGTH, TOWCAPACITY,
+		// 	TRANSMISSION, TRIPOFFROAD, TRUCKLOADPCT, TTYPE, VEHTYPE, WEIGHOUTPCT
+		// ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+		// 	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+		// 	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+		// 	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+		// )`)
+		var args []interface{}
+		for _, value := range record {
+			args = append(args, value)
+		}
+		fmt.Println(len(args))
+		// err := query.Bind(args...).Exec()
+		// if err != nil {
+		// 	panic(err)
+		// }
+		fmt.Println(record)
+	}
 	fmt.Fprint(w, responseMessage)
 }
 
