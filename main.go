@@ -5,12 +5,9 @@ import (
 	"net/http"
 )
 
-// Define a type that implements the http.Handler interface
 type tableHandler struct{}
 
-// Implement the ServeHTTP method for the tableHandler type
 func (h *tableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Check the request method and handle accordingly
 	switch r.Method {
 	case http.MethodGet:
 		handleReadGetRequest(w, r)
@@ -20,8 +17,10 @@ func (h *tableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Use the http.HandleFunc function for the root path
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		switch r.Method {
 		case http.MethodGet:
 			handleGetRequest(w, r)
@@ -33,8 +32,6 @@ func main() {
 	})
 	th := &tableHandler{}
 	http.Handle("/readTables", th)
-
-	// Start the HTTP server
 	log.Println("Server is running on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
