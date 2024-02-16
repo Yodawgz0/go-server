@@ -5,17 +5,6 @@ import (
 	"net/http"
 )
 
-type tableHandler struct{}
-
-func (h *tableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		handleReadGetRequest(w, r)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -25,13 +14,11 @@ func main() {
 		case http.MethodGet:
 			handleGetRequest(w, r)
 		case http.MethodPost:
-			handlePostRequest(w, r)
+			handleYearFilter(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-	th := &tableHandler{}
-	http.Handle("/readTables", th)
 	log.Println("Server is running on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
