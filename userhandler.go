@@ -77,9 +77,14 @@ func userLogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:   email,
-		Value:  "",
-		MaxAge: -1, // MaxAge<0 means delete cookie now
+		Name:  "authToken",
+		Value: "",
+		// Path:     "/", // specify the path if necessary
+		// Domain:   "example.com", // specify the domain if necessary
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+		HttpOnly: true,
+		// Secure:   true, // set to true if your application is served over HTTPS
 	})
 
 	fmt.Fprint(w, "User logged out successfully")
