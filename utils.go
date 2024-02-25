@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 func verifyCaptchaToken(token string) (bool, error) {
@@ -23,5 +26,34 @@ func verifyCaptchaToken(token string) (bool, error) {
 		return false, err
 	}
 	fmt.Print((result.Success))
+	return true, nil
+}
+
+func verifyTokenHandler(w http.ResponseWriter, r *http.Request) (bool, error) {
+	cookie, err := r.Cookie("authToken")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return false, err
+		}
+		return false, err
+	}
+	tokenStr := cookie.Value
+	claims := &jwt.StandardClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return false, err
+		}
+		return false, err
+	}
+	if !token.Valid {
+		return false, err
+	}
+	expirationTime := time.Unix(claims.ExpiresAt, 0)
+	if expirationTime.Before(time.Now()) {
+		return false, err
+	}
 	return true, nil
 }
