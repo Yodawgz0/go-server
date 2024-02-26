@@ -22,6 +22,7 @@ func verifyCaptchaToken(token string) (bool, error) {
 	var result struct {
 		Success bool `json:"success"`
 	}
+
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return false, err
 	}
