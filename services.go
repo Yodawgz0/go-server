@@ -30,22 +30,18 @@ func handleGetRequest(w http.ResponseWriter, r *http.Request) {
 		Username: "ashley",
 		Password: "bazzi",
 	}
-	cluster.Keyspace = "world_census" // Use system_schema keyspace
+	cluster.Keyspace = "world_census"
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer session.Close()
-
-	// Query table metadata from system_schema.tables
 	iter := session.Query("SELECT * FROM census WHERE time = 2100 ALLOW FILTERING").Iter()
 	var censusData CensusData
 	censusRecords := []CensusData{}
 	for iter.Scan(&censusData.ID, &censusData.Geo, &censusData.Name, &censusData.Population, &censusData.Time) {
 		censusRecords = append(censusRecords, censusData)
 	}
-
-	// Marshal the data to JSON
 	jsonData, err := json.Marshal(censusRecords)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -53,8 +49,6 @@ func handleGetRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
-	// Write JSON data to response
 	_, _ = w.Write(jsonData)
 
 }

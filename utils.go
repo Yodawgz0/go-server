@@ -30,7 +30,7 @@ func verifyCaptchaToken(token string) (bool, error) {
 	return true, nil
 }
 
-func verifyTokenHandler(_w http.ResponseWriter, r *http.Request) (bool, error) {
+func verifyTokenHandler(_ http.ResponseWriter, r *http.Request) (bool, error) {
 	cookie, err := r.Cookie("authToken")
 	if err != nil {
 		if err == http.ErrNoCookie {
