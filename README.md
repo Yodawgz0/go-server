@@ -1,6 +1,7 @@
 # Go Server for Communicating with Cassandra
 
 This repository contains a Go server implementation for communicating with a Cassandra database. The Cassandra database is assumed to be running on Docker.
+Now the docker containers which this works on is implemented on by the cluster of nodes.
 
 ## Cassandra Setup
 
