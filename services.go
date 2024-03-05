@@ -26,11 +26,11 @@ func handleGetRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Recieved GET reuqest from %s for %s", r.RemoteAddr, r.URL.Path)
 	cluster := gocql.NewCluster("localhost")
 	cluster.Port = 9042
-	cluster.Authenticator = gocql.PasswordAuthenticator{
-		Username: "ashley",
-		Password: "bazzi",
-	}
-	cluster.Keyspace = "world_census"
+	// cluster.Authenticator = gocql.PasswordAuthenticator{
+	// 	Username: "ashley",
+	// 	Password: "bazzi",
+	// }
+	cluster.Keyspace = "datapop"
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatal(err)
