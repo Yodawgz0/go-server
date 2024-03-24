@@ -15,17 +15,8 @@ type Year struct {
 }
 
 type CensusData struct {
-	Key                  string            `json:"key"`
-	ArrayContains        map[string]string `json:"array_contains"`
-	ArraySize            *int              `json:"array_size,omitempty"`
-	DocJSON              map[string]string `json:"doc_json"`
-	ExistKeys            []string          `json:"exist_keys"`
-	QueryBoolValues      *bool             `json:"query_bool_values,omitempty"`
-	QueryDblValues       *float64          `json:"query_dbl_values,omitempty"`
-	QueryNullValues      *bool             `json:"query_null_values,omitempty"`
-	QueryTextValues      map[string]string `json:"query_text_values"`
-	QueryTimestampValues *string           `json:"query_timestamp_values,omitempty"`
-	TxID                 string            `json:"tx_id"`
+	// Key      string            `json:"key"`
+	DocJSON string `json:"doc_json"`
 }
 
 //	cluster.Authenticator = gocql.PasswordAuthenticator{
