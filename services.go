@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gocql/gocql"
+	"github.com/joho/godotenv"
 )
 
 type Year struct {
@@ -19,56 +21,50 @@ type CensusData struct {
 	DocJSON string `json:"doc_json"`
 }
 
-//	cluster.Authenticator = gocql.PasswordAuthenticator{
-//		Username: "YWTfzyivjkJufvUzSRNKiNvZ",
-//		Password: "bMnajGxe6ZGj2nPycO6d4m8MS+4FMPtsQc831uJ02zJoHHSq0pGuMO_52kuZSA5rv8gY-.e8DxiSghOf60Zca2ME-JS.0--z_2imZL5tFrnGZ8LqZn+aO5ZCFjxJzhln",
-//	}
+func goDotEnvVariable(key string) string {
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	return os.Getenv(key)
+}
+
 func handleGetRequest(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Recieved GET reuqest from %s for %s", r.RemoteAddr, r.URL.Path)
+	log.Printf("Received GET request from %s for %s", r.RemoteAddr, r.URL.Path)
 	cluster := gocql.NewCluster("localhost")
 	cluster.Port = 9042
 	cluster.Keyspace = "census_data"
+	Username := goDotEnvVariable("CLUSTER_USERNAME")
+	Password := goDotEnvVariable("CLUSTER_PASSWORD")
+	cluster.Authenticator = gocql.PasswordAuthenticator{
+		Username: Username,
+		Password: Password,
+	}
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer session.Close()
-
-	// Execute the query
-	query := "SELECT * FROM census_data WHERE query_text_values['time'] = '1841' LIMIT 5 ALLOW FILTERING"
+	query := "SELECT * FROM census_data WHERE query_text_values['time'] = '1841' ALLOW FILTERING"
 	iter := session.Query(query).Iter()
-
-	// Slice to hold the results
 	var results []CensusData
-
-	// Map to hold the row data
-	var row map[string]interface{}
-
-	// Iterate through the results
-	for iter.MapScan(row) {
-		// Convert the row to CensusData and append to results
-
+	for {
+		row := make(map[string]interface{})
 		if !iter.MapScan(row) {
 			break
 		}
 		data := CensusData{
-			Key:             row["key"].(string),
-			ArrayContains:   row["array_contains"].(map[string]string),
-			DocJSON:         row["doc_json"].(map[string]string),
-			ExistKeys:       row["exist_keys"].([]string),
-			QueryTextValues: row["query_text_values"].(map[string]string),
-			TxID:            row["tx_id"].(string),
+			// Key:      row["key"].(string),
+			DocJSON: row["doc_json"].(string),
 		}
 		results = append(results, data)
 	}
-
-	// Check for errors in iteration
 	if err := iter.Close(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Marshal the results to JSON
 	jsonData, err := json.Marshal(results)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,6 +74,7 @@ func handleGetRequest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonData)
 }
+
 func handleYearFilter(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received POST request from %s for %s", r.RemoteAddr, r.URL.Path)
 	var Year Year
