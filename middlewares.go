@@ -35,11 +35,11 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	// isValid, err := verifyTokenHandler(w, r)
-	// if err != nil || !isValid {
-	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	// 	return
-	// }
+	isValid, err := verifyTokenHandler(w, r)
+	if err != nil || !isValid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		handleGetRequest(w, r)
