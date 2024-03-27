@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/gocql/gocql"
 	"github.com/joho/godotenv"
@@ -18,7 +17,7 @@ type Year struct {
 
 type CensusData struct {
 	// Key      string            `json:"key"`
-	DocJSON string `json:"doc_json"`
+	QueryTextValues map[string]string `json:"query_text_values"`
 }
 
 func goDotEnvVariable(key string) string {
@@ -30,7 +29,7 @@ func goDotEnvVariable(key string) string {
 	return os.Getenv(key)
 }
 
-func handleGetRequest(w http.ResponseWriter, r *http.Request) {
+func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string) {
 	log.Printf("Received GET request from %s for %s", r.RemoteAddr, r.URL.Path)
 	cluster := gocql.NewCluster("localhost")
 	cluster.Port = 9042
@@ -46,7 +45,7 @@ func handleGetRequest(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	defer session.Close()
-	query := "SELECT * FROM census_data WHERE query_text_values['time'] = '1841' ALLOW FILTERING"
+	query := fmt.Sprintf("SELECT * FROM census_data WHERE query_text_values['time'] = '%s' LIMIT 10 ALLOW FILTERING", year)
 	iter := session.Query(query).Iter()
 	var results []CensusData
 	for {
@@ -56,7 +55,7 @@ func handleGetRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		data := CensusData{
 			// Key:      row["key"].(string),
-			DocJSON: row["doc_json"].(string),
+			QueryTextValues: row["query_text_values"].(map[string]string),
 		}
 		results = append(results, data)
 	}
@@ -73,23 +72,4 @@ func handleGetRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonData)
-}
-
-func handleYearFilter(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Received POST request from %s for %s", r.RemoteAddr, r.URL.Path)
-	var Year Year
-	err := json.NewDecoder(r.Body).Decode(&Year)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	var year int
-	year, err = strconv.Atoi(Year.Year)
-	if err != nil {
-		panic(err)
-	}
-	log.Printf("Data received is year: %d", year)
-	responseMessage := fmt.Sprintf("Data received is year: %d", year)
-	fmt.Print(w, responseMessage)
-
 }
