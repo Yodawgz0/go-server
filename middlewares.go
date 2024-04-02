@@ -42,6 +42,11 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 			yearFilter := r.URL.Query().Get("year")
 			handleYearFilterRequest(w, r, yearFilter)
 		}
+	case "/gdp_data":
+		if r.Method == http.MethodGet {
+			yearFilter := r.URL.Query().Get("year")
+			handleGdpFilterRequest(w, r, yearFilter)
+		}
 	default:
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
