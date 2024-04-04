@@ -94,9 +94,7 @@ func handleGdpFilterRequest(w http.ResponseWriter, r *http.Request, year string)
 		log.Fatal(err)
 	}
 	defer session.Close()
-	query1 := fmt.Sprintf("SELECT * FROM gdp_data WHERE query_text_values['time'] = '%s' ALLOW FILTERING", year)
-	print(query1)
-	query := "Select * from gdp_data WHERE query_dbl_values['Income_per_person'] > 2000"
+	query := fmt.Sprintf("SELECT * FROM gdp_data WHERE query_text_values['time'] = '%s' ALLOW FILTERING", year)
 	iter := session.Query(query).Iter()
 	var results []CensusData
 	for {
