@@ -47,9 +47,7 @@ func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string
 		log.Fatal(err)
 	}
 	defer session.Close()
-	query1 := fmt.Sprintf("SELECT * FROM census_data WHERE query_text_values['time'] = '%s' LIMIT 10 ALLOW FILTERING", year)
-	print(query1)
-	query := "SELECT * from census_data WHERE query_dbl_values['Population'] > 20000000;"
+	query := fmt.Sprintf("SELECT * FROM census_data WHERE query_text_values['time'] = '%s' LIMIT 10 ALLOW FILTERING", year)
 	iter := session.Query(query).Iter()
 	var results []CensusData
 	for {
