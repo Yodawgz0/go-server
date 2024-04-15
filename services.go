@@ -21,6 +21,16 @@ type CensusData struct {
 	QueryTextValues map[string]string   `json:"query_text_values"`
 	QueryDblValues  map[string]*inf.Dec `json:"query_dbl_values"`
 }
+type YearBoundaryValues struct {
+	MinPopulation *inf.Dec
+	MaxPopulation *inf.Dec
+}
+
+type filteredCensusData struct {
+	MinPopulation *inf.Dec
+	MaxPopulation *inf.Dec
+	AllData       []CensusData
+}
 
 func goDotEnvVariable(key string) string {
 	err := godotenv.Load(".env")
@@ -47,7 +57,23 @@ func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string
 		log.Fatal(err)
 	}
 	defer session.Close()
-	query := fmt.Sprintf("SELECT * FROM census_data WHERE query_text_values['time'] = '%s' LIMIT 10 ALLOW FILTERING", year)
+	queryMaxMin := fmt.Sprintf("SELECT MAX(query_dbl_values['Population']), MIN(query_dbl_values['Population']) from census_data WHERE query_dbl_values['time'] = %s", year)
+	var minPopulation, maxPopulation *inf.Dec
+	yearIter := session.Query(queryMaxMin).Iter()
+	for {
+		row := make(map[string]interface{})
+		if !yearIter.MapScan(row) {
+			break
+		}
+		data := YearBoundaryValues{
+			MinPopulation: row["system.max(query_dbl_values['Population'])"].(*inf.Dec),
+			MaxPopulation: row["system.min(query_dbl_values['Population'])"].(*inf.Dec),
+		}
+		minPopulation = data.MinPopulation
+		maxPopulation = data.MaxPopulation
+	}
+	fmt.Printf("Min Year: %d, Max Year: %d\n", minPopulation, maxPopulation)
+	query := fmt.Sprintf("SELECT * FROM census_data WHERE query_dbl_values['time'] = %s ALLOW FILTERING", year)
 	iter := session.Query(query).Iter()
 	var results []CensusData
 	for {
@@ -58,6 +84,7 @@ func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string
 		data := CensusData{
 			// Key:      row["key"].(string),
 			QueryTextValues: row["query_text_values"].(map[string]string),
+			QueryDblValues:  row["query_dbl_values"].(map[string]*inf.Dec),
 		}
 		results = append(results, data)
 	}
@@ -66,7 +93,15 @@ func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string
 		return
 	}
 
-	jsonData, err := json.Marshal(results)
+	finalData := filteredCensusData{
+		MinPopulation: minPopulation,
+		MaxPopulation: maxPopulation,
+		AllData:       results,
+	}
+
+	fmt.Println(finalData)
+
+	jsonData, err := json.Marshal(finalData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -92,7 +127,7 @@ func handleGdpFilterRequest(w http.ResponseWriter, r *http.Request, year string)
 		log.Fatal(err)
 	}
 	defer session.Close()
-	query := fmt.Sprintf("SELECT * FROM gdp_data WHERE query_text_values['time'] = '%s' ALLOW FILTERING", year)
+	query := fmt.Sprintf("SELECT * FROM gdp_data WHERE query_dbl_values['time'] = %s ALLOW FILTERING", year)
 	iter := session.Query(query).Iter()
 	var results []CensusData
 	for {
