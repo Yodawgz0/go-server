@@ -86,6 +86,6 @@ func userLogoutHandler(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		// Secure:   true, // set to true if your application is served over HTTPS
 	})
-
+	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "User logged out successfully")
 }
