@@ -45,7 +45,8 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	case "/gdp_data":
 		if r.Method == http.MethodGet {
 			yearFilter := r.URL.Query().Get("year")
-			handleGdpFilterRequest(w, r, yearFilter)
+			typeIncomefilter := r.URL.Query().Get("filter")
+			handleGdpFilterRequest(w, r, yearFilter, typeIncomefilter)
 		}
 	default:
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
