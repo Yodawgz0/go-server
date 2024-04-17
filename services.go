@@ -21,15 +21,31 @@ type CensusData struct {
 	QueryTextValues map[string]string   `json:"query_text_values"`
 	QueryDblValues  map[string]*inf.Dec `json:"query_dbl_values"`
 }
+type GDPData struct {
+	// Key      string            `json:"key"`
+	QueryTextValues map[string]string
+	QueryDblValues  *inf.Dec
+}
 type YearBoundaryValues struct {
 	MinPopulation *inf.Dec
 	MaxPopulation *inf.Dec
 }
 
+type gdpFilterBoundaryValues struct {
+	MinValue *inf.Dec
+	MaxValue *inf.Dec
+}
+
+type filteredGDPData struct {
+	MinValue *inf.Dec
+	MaxValue *inf.Dec
+	AllData  []GDPData
+}
+
 type filteredCensusData struct {
-	MinPopulation *inf.Dec
-	MaxPopulation *inf.Dec
-	AllData       []CensusData
+	MinValue *inf.Dec
+	MaxValue *inf.Dec
+	AllData  []CensusData
 }
 
 func goDotEnvVariable(key string) string {
@@ -66,13 +82,12 @@ func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string
 			break
 		}
 		data := YearBoundaryValues{
-			MinPopulation: row["system.max(query_dbl_values['Population'])"].(*inf.Dec),
-			MaxPopulation: row["system.min(query_dbl_values['Population'])"].(*inf.Dec),
+			MinPopulation: row["system.min(query_dbl_values['Population'])"].(*inf.Dec),
+			MaxPopulation: row["system.max(query_dbl_values['Population'])"].(*inf.Dec),
 		}
 		minPopulation = data.MinPopulation
 		maxPopulation = data.MaxPopulation
 	}
-	fmt.Printf("Min Year: %d, Max Year: %d\n", minPopulation, maxPopulation)
 	query := fmt.Sprintf("SELECT * FROM census_data WHERE query_dbl_values['time'] = %s ALLOW FILTERING", year)
 	iter := session.Query(query).Iter()
 	var results []CensusData
@@ -94,12 +109,10 @@ func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string
 	}
 
 	finalData := filteredCensusData{
-		MinPopulation: minPopulation,
-		MaxPopulation: maxPopulation,
-		AllData:       results,
+		MinValue: minPopulation,
+		MaxValue: maxPopulation,
+		AllData:  results,
 	}
-
-	fmt.Println(finalData)
 
 	jsonData, err := json.Marshal(finalData)
 	if err != nil {
@@ -111,7 +124,7 @@ func handleYearFilterRequest(w http.ResponseWriter, r *http.Request, year string
 	w.Write(jsonData)
 }
 
-func handleGdpFilterRequest(w http.ResponseWriter, r *http.Request, year string) {
+func handleGdpFilterRequest(w http.ResponseWriter, r *http.Request, year string, typeIncomefilter string) {
 	log.Printf("Received GET request from %s for %s", r.RemoteAddr, r.URL.Path)
 	cluster := gocql.NewCluster("localhost")
 	cluster.Port = 9042
@@ -127,27 +140,49 @@ func handleGdpFilterRequest(w http.ResponseWriter, r *http.Request, year string)
 		log.Fatal(err)
 	}
 	defer session.Close()
-	query := fmt.Sprintf("SELECT * FROM gdp_data WHERE query_dbl_values['time'] = %s ALLOW FILTERING", year)
+	queryMaxMin := fmt.Sprintf("SELECT MAX(query_dbl_values['%s']), MIN(query_dbl_values['%s']) from gdp_data WHERE query_dbl_values['time'] = %s", typeIncomefilter, typeIncomefilter, year)
+	var minValue, maxValue *inf.Dec
+	yearIter := session.Query(queryMaxMin).Iter()
+	for {
+		row := make(map[string]interface{})
+		if !yearIter.MapScan(row) {
+			break
+		}
+		data := gdpFilterBoundaryValues{
+			MinValue: row[fmt.Sprintf("system.min(query_dbl_values['%s'])", typeIncomefilter)].(*inf.Dec),
+			MaxValue: row[fmt.Sprintf("system.max(query_dbl_values['%s'])", typeIncomefilter)].(*inf.Dec),
+		}
+		minValue = data.MinValue
+		maxValue = data.MaxValue
+	}
+
+	query := fmt.Sprintf("SELECT query_dbl_values['%s'], query_text_values  FROM gdp_data WHERE query_dbl_values['time'] = %s", typeIncomefilter, year)
 	iter := session.Query(query).Iter()
-	var results []CensusData
+	var results []GDPData
 	for {
 		row := make(map[string]interface{})
 		if !iter.MapScan(row) {
 			break
 		}
-		data := CensusData{
+		data := GDPData{
 			// Key:      row["key"].(string),
 			QueryTextValues: row["query_text_values"].(map[string]string),
-			QueryDblValues:  row["query_dbl_values"].(map[string]*inf.Dec),
+			QueryDblValues:  row[fmt.Sprintf("query_dbl_values['%s']", typeIncomefilter)].(*inf.Dec),
 		}
 		results = append(results, data)
+	}
+
+	finalData := filteredGDPData{
+		MinValue: minValue,
+		MaxValue: maxValue,
+		AllData:  results,
 	}
 	if err := iter.Close(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonData, err := json.Marshal(results)
+	jsonData, err := json.Marshal(finalData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
